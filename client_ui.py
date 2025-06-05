@@ -164,6 +164,14 @@ class PotatoMailApp(ctk.CTk):
                 self.read_meta.configure(text=f"From: {m['sender']}    Date: {m['date']}")
                 self.read_body.delete("1.0", "end")
                 self.read_body.insert("end", m["body"])
+
+                right = self.body.winfo_children()[1]
+                for w in right.winfo_children():
+                    if isinstance(w, ctk.CTkButton) and w.cget("text") == "Delete":
+                        w.destroy()
+                        
+                delete_btn = ctk.CTkButton(right, text="Delete", width=100, command=lambda mail_id=m["id"]: self.delete_mail(mail_id))
+                delete_btn.pack(anchor="e", pady=(10, 0))
             else:
                 self.read_subject.configure(text="")
                 self.read_meta.configure(text="")
@@ -201,6 +209,19 @@ class PotatoMailApp(ctk.CTk):
                 messagebox.showerror("Send Failed", res)
         except Exception as e:
             messagebox.showerror("Send Error", str(e))
+
+    def delete_mail(self, mid):
+        if messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this mail?"):
+            try:
+                self.sock.sendall(f"DELETE::{mid}".encode())
+                res = self.sock.recv(1024).decode()
+                if res == "DELETE_OK":
+                    messagebox.showinfo("Success", "Mail deleted.")
+                    self.show_inbox()
+                else:
+                    messagebox.showerror("Delete Failed", res)
+            except Exception as e:
+                messagebox.showerror("Delete Error", str(e))
 
     def logout(self):
         try:
